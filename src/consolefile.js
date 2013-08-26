@@ -52,7 +52,7 @@
 			return instances[fileName];
 		};
 
-		ConsoleFile = function ( fs, fileName ) {
+		function ConsoleFile ( fs, fileName ) {
 			this._fs = fs;
 			this._fileName = fileName;
 
