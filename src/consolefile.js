@@ -113,6 +113,11 @@
 				function( fileWriter ) {
 					fileWriter.seek( fileWriter.length );
 
+					// TODO for some reason this gets called but the thing isn't written into a file
+					// maybe I can change this so that stuff is flushed into the file in a timeout, so 
+					// I can have control over file operations (only one at a time) as to avoid writing to the file
+					// from two different locations
+					// NEEDS INVESTIGATING
 					var blob = new Blob( this._fsCache, {type: 'text/plain'} );
 					fileWriter.write( blob );
 
