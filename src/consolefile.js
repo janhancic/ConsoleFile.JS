@@ -1,95 +1,185 @@
 (function () {
-	checkIfBrowserIsSupported();
+	if ( isBrowserSupported() === false ) {
+		patchConsole();
+		console.warn( 'ConsoleFile.JS cannot run under this browser.' );
 
-	var instances = {};
-
-	// request permission from browser
-	(window.requestFileSystem || window.webkitRequestFileSystem)( window.PERSISTENT, 5 * 1024 * 1024, onInitFs, errorHandler );
-
-	function onInitFs(fs) {
-
-	  fs.root.getFile('log.txt', {create: true, exclusive: true}, function(fileEntry) {
-
-	    // fileEntry.isFile === true
-	    // fileEntry.name == 'log.txt'
-	    // fileEntry.fullPath == '/log.txt'
-
-	  }, errorHandler);
-
+		return;
 	}
 
-	function errorHandler(e) {
-	  var msg = '';
+	var requestQuotaBytes = 10 * 1024 * 1024; // 10MB
 
-	  switch (e.code) {
-	    case FileError.QUOTA_EXCEEDED_ERR:
-	      msg = 'QUOTA_EXCEEDED_ERR';
-	      break;
-	    case FileError.NOT_FOUND_ERR:
-	      msg = 'NOT_FOUND_ERR';
-	      break;
-	    case FileError.SECURITY_ERR:
-	      msg = 'SECURITY_ERR';
-	      break;
-	    case FileError.INVALID_MODIFICATION_ERR:
-	      msg = 'INVALID_MODIFICATION_ERR';
-	      break;
-	    case FileError.INVALID_STATE_ERR:
-	      msg = 'INVALID_STATE_ERR';
-	      break;
-	    default:
-	      msg = 'Unknown Error';
-	      break;
-	  };
-
-	  console.log('Error: ' + msg, e);
-	}
-
-	/**
-	 *
-	 */
-	console.file = function ( fileName ) {
-		if ( !fileName ) {
-			fileName = 'default';
+	navigator.webkitPersistentStorage.requestQuota(
+		requestQuotaBytes,
+		function( grantedBytes ) {
+			window.webkitRequestFileSystem(
+				window.PERSISTENT,
+				grantedBytes,
+				function ( fs ) {
+					// create "log" folder, then initialize the console.file()
+					fs.root.getDirectory(
+						'log',
+						{ create: true },
+						function ( dirEntry ) {
+							initConsoleFile( fs );
+						},
+						fsErrorHandler
+					);
+				},
+				fsErrorHandler
+			);
+		},
+		function ( e ) {
+			patchConsole();
+			console.warn( 'ConsoleFile.JS cannot run as it can\'t allocate enough persistent storage. Tried to allocate: ' + requestQuotaBytes );
 		}
+	);
 
-		if ( !instances[fileName] ) {
-			instances[fileName] = new ConsoleFile( fileName );
-		}
+	function initConsoleFile ( fs ) {
+		var instances = {};
 
-		return instances[fileName];
-	};
+		/**
+		 *
+		 */
+		console.file = function ( fileName ) {
+			if ( !fileName ) {
+				fileName = 'default';
+			}
 
-	ConsoleFile = function ( fileName ) {
-		this._fileName = fileName;
-	};
+			if ( !instances[fileName] ) {
+				instances[fileName] = new ConsoleFile( fs, fileName );
+			}
 
-	ConsoleFile.prototype.log = function ( tmpString ) {
-		console.log( 'logging to file: ' + this._fileName + ' #### ' + tmpString );
-	};
+			return instances[fileName];
+		};
 
-	ConsoleFile.prototype.info = function () {
+		ConsoleFile = function ( fs, fileName ) {
+			this._fs = fs;
+			this._fileName = fileName;
 
-	};
+			this._fsIsReady = false;
+			this._fsCache = [];
 
-	ConsoleFile.prototype.warn = function () {
+			fs.root.getFile(
+				'log/' + this._fileName + '.log',
+				{
+					create: true,
+					exclusive: false
+				},
+				function( fsFile ) {
+					this._fsIsReady = true;
+					this._fsFile = fsFile;
+					this._flushCacheToFile();
+				}.bind( this ),
+				fsErrorHandler
+			);
+		};
 
-	};
+		/**
+		 * TODO
+		 */
+		ConsoleFile.prototype.log = function ( tmpString ) {
+			// console.log( 'logging to file: ' + this._fileName + ' #### ' + tmpString );
+			this._write( 'log ', tmpString );
+		};
 
-	ConsoleFile.prototype.error = function () {
+		/** @private */
+		ConsoleFile.prototype._write = function ( prefix, str ) {
+			var stringToWrite = prefix + str + "\n";
 
+			if ( this._fsIsReady === false ) {
+				// if we don't yet have a handle to a log file, we will write to this 
+				// cache, and then once the file handle has been obtained, the contents 
+				// of this cache will be written to disk
+				this._fsCache.push ( stringToWrite );
+				console.log( 'writing to cache ', str );
+			} else {
+				console.log( 'writing to file ', str );
+				this._fsFile.createWriter(
+					function( fileWriter ) {
+						fileWriter.seek( fileWriter.length );
+
+						var blob = new Blob( [stringToWrite], {type: 'text/plain'} );
+						fileWriter.write( blob );
+					}.bind( this ),
+					fsErrorHandler
+				);
+			}
+		};
+
+		/** @private */
+		ConsoleFile.prototype._flushCacheToFile = function () {
+			// Create a FileWriter object for our FileEntry (log.txt).
+			this._fsFile.createWriter(
+				function( fileWriter ) {
+					fileWriter.seek( fileWriter.length );
+
+					var blob = new Blob( this._fsCache, {type: 'text/plain'} );
+					fileWriter.write( blob );
+
+					this._fsCache = [];
+				}.bind( this ),
+				fsErrorHandler
+			);
+		};
+
+		// ConsoleFile.prototype.info = function () {};
+		// ConsoleFile.prototype.warn = function () {};
+		// ConsoleFile.prototype.error = function () {};
 	};
 
 	// private utility functions
 
-	function checkIfBrowserIsSupported () {
-		if ( !window.console ) {
-			throw new Error( 'Your browser does not support the console API. console.file.JS can\'t run.');
+	function isBrowserSupported () {
+		if ( !navigator.webkitPersistentStorage ) {
+			return false;
 		}
 
-		if ( !window.requestFileSystem && !window.webkitRequestFileSystem ) {
-			throw new Error( 'Your browser does not support the FileSystem API. console.file.JS can\'t run.');
-		}
+		return true;
+	};
+
+	function patchConsole () {
+		console.file = function () {
+			var nopFunction = function () {};
+
+			return {
+				log: nopFunction,
+				info: nopFunction,
+				warn: nopFunction,
+				error: nopFunction
+			};
+		};
+	};
+
+	function fsErrorHandler ( error ) {
+		var msg = '';
+
+		switch (e.code) {
+			case FileError.QUOTA_EXCEEDED_ERR:
+				msg = 'QUOTA_EXCEEDED_ERR';
+			break;
+
+			case FileError.NOT_FOUND_ERR:
+				msg = 'NOT_FOUND_ERR';
+			break;
+
+			case FileError.SECURITY_ERR:
+				msg = 'SECURITY_ERR';
+			break;
+
+			case FileError.INVALID_MODIFICATION_ERR:
+				msg = 'INVALID_MODIFICATION_ERR';
+			break;
+
+			case FileError.INVALID_STATE_ERR:
+				msg = 'INVALID_STATE_ERR';
+			break;
+
+			default:
+				msg = 'Unknown Error';
+			break;
+		};
+
+		console.log( 'ConsoleFile.JS FileSystem error: ' + msg, e) ;
 	};
 
 }() );
