@@ -6,15 +6,7 @@
 	<body>
 <script>
 
-setTimeout(function(){
 var i = 0;
-/*
-	TODO: the setInterval is here because the FS isn't yet ready by the time we start calling log statements
-	I need to initialize the console.file() immediately, and then store any stuff that wishes to be logged in a cache
-	(same as I already do with fsCache (which is used untill we get a handle to the file)), and then once the FS (& file) is ready
-	write everything to the file.
-	This should ensure that users can start calling console.file().XXX() immediately and everything will still get logged.
-*/
 var a = setInterval( function() {
 	console.file().log ( 'aaa ' + i );
 
@@ -23,8 +15,6 @@ var a = setInterval( function() {
 		clearInterval(a);
 	}
 }, 0);
-}, 140);
-
 
 </script>
 	</body>
