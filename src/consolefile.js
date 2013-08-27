@@ -45,8 +45,25 @@
 		} );
 	};
 
+	// ConsoleFile object used as the default log file (console.file.log())
+	instances['default'] = new ConsoleFile( fs, 'default' );
+
 	/**
+	 * Starting point of ConsoleFile.JS
+	 * 
+	 * Can be used as a function to which you pass the name of the log file,
+	 * and it will return a ConsoleFile object that has methods such as .log(), 
+	 * .warn(), ...
 	 *
+	 * Or can be used as a property of the console object, which in turn contains 
+	 * the same methods as the ConsoleFile. This form basically allows you to omit 
+	 * the () when you want to log to the default file.
+	 * In other words, this are all equivalent:
+	 * <code>
+	 * console.file( 'default' ).log( 'something' );
+	 * console.file().log( 'something' );
+	 * console.file.log( 'something' );
+	 * </code>
 	 */
 	console.file = function ( fileName ) {
 		if ( !fileName ) {
@@ -58,6 +75,14 @@
 		}
 
 		return instances[fileName];
+	};
+
+	// TODO, create a list of functions, and dynamically add them to 
+	// console.file & to the stubed version of console.file from patchCOnsole()
+	// so I don't have to repeat them all the time, and potentially reduce the 
+	// risk of errors
+	console.file.log = function () {
+		instances['default'].log.apply( instances['default'], arguments );
 	};
 
 	function ConsoleFile ( fs, fileName ) {
@@ -86,6 +111,7 @@
 		this._initFile();
 	};
 
+	// TODO: think about taking the private methods off of prototype so users can't see/access them
 	/** @private */
 	ConsoleFile.prototype._write = function ( prefix, str ) {
 		var stringToWrite = prefix + str + "\n";
@@ -154,7 +180,7 @@
 				// and also handle so it doesn't flush after each call to _write() ... but only after X 
 				// amounts of entries or after a certain amount of time.
 				// or maybe, just after some time after something was written and then just reset the timeout
-				// each time there is a new write or something like that. Have to test it out.
+				// each time there is a new write or something like that. Have to test it out. writing 
 				setTimeout( this._startFlushing.bind( this ), 50 );
 			}.bind( this ),
 			fsErrorHandler
