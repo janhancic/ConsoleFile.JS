@@ -64,6 +64,9 @@
 	 * console.file().log( 'something' );
 	 * console.file.log( 'something' );
 	 * </code>
+	 *
+	 * @param {String} File name of the log file to use for the ConsoleFile object 
+	 *  that is returned from this function. Defaults to 'default'.
 	 */
 	console.file = function ( fileName ) {
 		if ( !fileName ) {
@@ -81,10 +84,24 @@
 	// console.file & to the stubed version of console.file from patchCOnsole()
 	// so I don't have to repeat them all the time, and potentially reduce the 
 	// risk of errors
+
+	/**
+	 * Shortcut for console.file().log()
+	 * @see ConsoleFile#log
+	 */
 	console.file.log = function () {
 		instances['default'].log.apply( instances['default'], arguments );
 	};
 
+	/**
+	 * @class
+	 * @constructor
+	 * Constructs a new ConsoleFile. The construction is handled by the 
+	 * console.file(), as a user you never instantiate this class.
+	 * 
+	 * @param {Object} fs FileSystem object
+	 * @param {String} fileName Name of the log file to use
+	 */
 	function ConsoleFile ( fs, fileName ) {
 		this._fileName = fileName;
 
@@ -99,48 +116,38 @@
 	};
 
 	/**
-	 * TODO
+	 * Writes the arguments you pass into a log file.
 	 */
 	ConsoleFile.prototype.log = function ( tmpString ) {
 		// console.log( 'logging to file: ' + this._fileName + ' #### ' + tmpString );
 		this._write( 'log ', tmpString );
 	};
 
+	// TODO: this should be private
 	ConsoleFile.prototype.setFs = function ( fs ) {
 		this._fs = fs;
 		this._initFile();
 	};
 
 	// TODO: think about taking the private methods off of prototype so users can't see/access them
-	/** @private */
+	/**
+	 * @private
+	 * Holds the logic for writing to file for .log(), .warn(), ...
+	 * @param {String} prefix the prefix to put before each log line
+	 * @param {String} the string to write to the log file
+	 */
 	ConsoleFile.prototype._write = function ( prefix, str ) {
 		var stringToWrite = prefix + str + "\n";
 
 		this._cache.push ( stringToWrite );
 	};
 
-	/** @private */
-	ConsoleFile.prototype._flushCacheToFile = function () {
-		// Create a FileWriter object for our FileEntry (log.txt).
-		this._fsFile.createWriter(
-			function( fileWriter ) {
-				fileWriter.seek( fileWriter.length );
-
-				// TODO for some reason this gets called but the thing isn't written into a file
-				// maybe I can change this so that stuff is flushed into the file in a timeout, so 
-				// I can have control over file operations (only one at a time) as to avoid writing to the file
-				// from two different locations
-				// NEEDS INVESTIGATING
-				var blob = new Blob( this._cache, {type: 'text/plain'} );
-				fileWriter.write( blob );
-				console.log('flushing cache');
-
-				this._cache = [];
-			}.bind( this ),
-			fsErrorHandler
-		);
-	};
-
+	/**
+	 * @private
+	 * Called when the FS is ready. It will obtain the file 
+	 *  object for the log file, and kick off flushing to the 
+	 *  file. 
+	 */
 	ConsoleFile.prototype._initFile = function () {
 		this._fs.root.getFile(
 			'log/' + this._fileName + '.log',
@@ -192,8 +199,13 @@
 	// ConsoleFile.prototype.error = function () {};
 	// };
 
-	// private utility functions
-
+	/**
+	 * @private
+	 * Determines if the browser supports everything this library needs 
+	 *  in order to work
+	 *  
+	 * @return {Boolean}
+	 */
 	function isBrowserSupported () {
 		if ( !navigator.webkitPersistentStorage ) {
 			return false;
@@ -202,6 +214,13 @@
 		return true;
 	};
 
+	/**
+	 * @private
+	 * If the browser is not supported this function will be called, 
+	 *  which sets up the console.file() & console.file as if the 
+	 *  browser was supported. This allows the user to use the library 
+	 *  and not have to worry about it breaking in unsupported browsers.
+	 */
 	function patchConsole () {
 		console.file = function () {
 			var nopFunction = function () {};
@@ -213,8 +232,14 @@
 				error: nopFunction
 			};
 		};
+
+		// TODO: patch console.file also
 	};
 
+	/**
+	 * @private
+	 * General FileSystem API error handler.
+	 */
 	function fsErrorHandler ( error ) {
 		var msg = '';
 
