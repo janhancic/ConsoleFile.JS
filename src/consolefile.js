@@ -1,12 +1,15 @@
-(function () {
+(function ( console ) {
+	var consoleFileMethods = ['log', 'warn', 'error', 'info'],
+		instances = {},
+		fs = null,
+		requestQuotaBytes = 10 * 1024 * 1024; // 10MB
+
 	if ( isBrowserSupported() === false ) {
-		patchConsole();
+		patchConsole(consoleFileMethods);
 		console.warn( 'ConsoleFile.JS cannot run under this browser.' );
 
 		return;
 	}
-
-	var requestQuotaBytes = 10 * 1024 * 1024; // 10MB
 
 	navigator.webkitPersistentStorage.requestQuota(
 		requestQuotaBytes,
@@ -33,9 +36,6 @@
 			console.warn( 'ConsoleFile.JS cannot run as it can\'t allocate enough persistent storage. Tried to allocate: ' + requestQuotaBytes );
 		}
 	);
-
-	var instances = {};
-	var fs = null;
 
 	function initFs ( fileSystem ) {
 		fs = fileSystem;
@@ -78,19 +78,6 @@
 		}
 
 		return instances[fileName];
-	};
-
-	// TODO, create a list of functions, and dynamically add them to 
-	// console.file & to the stubed version of console.file from patchCOnsole()
-	// so I don't have to repeat them all the time, and potentially reduce the 
-	// risk of errors
-
-	/**
-	 * Shortcut for console.file().log()
-	 * @see ConsoleFile#log
-	 */
-	console.file.log = function () {
-		instances['default'].log.apply( instances['default'], arguments );
 	};
 
 	/**
@@ -199,6 +186,13 @@
 	// ConsoleFile.prototype.error = function () {};
 	// };
 
+	// provide shortcut methods, so you can use console.file.log() instead of console.file().log()
+	consoleFileMethods.forEach( function ( methodName ) {
+		console.file[methodName] = function () {
+			instances['default'][methodName].apply( instances['default'], arguments );
+		};
+	} );
+
 	/**
 	 * @private
 	 * Determines if the browser supports everything this library needs 
@@ -221,19 +215,22 @@
 	 *  browser was supported. This allows the user to use the library 
 	 *  and not have to worry about it breaking in unsupported browsers.
 	 */
-	function patchConsole () {
-		console.file = function () {
-			var nopFunction = function () {};
+	function patchConsole ( consoleFileMethods ) {
+		var nopFunction = function () { console.log('nop')};
 
-			return {
-				log: nopFunction,
-				info: nopFunction,
-				warn: nopFunction,
-				error: nopFunction
-			};
+		console.file = function () {
+			var returnObj = {};
+
+			consoleFileMethods.forEach( function ( methodName ) {
+				returnObj[methodName] = nopFunction;
+			} );
+
+			return returnObj;
 		};
 
-		// TODO: patch console.file also
+		consoleFileMethods.forEach( function ( methodName ) {
+			console.file[methodName] = nopFunction;
+		} );
 	};
 
 	/**
@@ -272,4 +269,4 @@
 		console.log( 'ConsoleFile.JS FileSystem error: ' + msg, e) ;
 	};
 
-}() );
+}( console ) );
