@@ -80,6 +80,67 @@
 		return instances[fileName];
 	};
 
+	var consoleFilePrivate = {
+		/**
+		 * Holds the logic for writing to file for .log(), .warn(), ...
+		 * @param {String} prefix the prefix to put before each log line
+		 * @param {String} the string to write to the log file
+		 */
+		write: function ( cf, prefix, str ) {
+			var stringToWrite = prefix + str + "\n";
+
+			cf._cache.push ( stringToWrite );
+		},
+		/**
+		 * Called when the FS is ready. It will obtain the file 
+		 *  object for the log file, and kick off flushing to the 
+		 *  file. 
+		 */
+		initFile: function ( cf ) {
+			cf._fs.root.getFile(
+				'log/' + cf._fileName + '.log',
+				{
+					create: true,
+					exclusive: false
+				},
+				function( fsFile ) {
+					cf._fsFile = fsFile;
+					consoleFilePrivate.startFlushing( cf );
+				},
+				fsErrorHandler
+			);
+		},
+		startFlushing: function ( cf ) {
+			if ( cf._isWriting === true ) {
+				return;
+			}
+
+			cf._isWriting = true;
+			cf._fsFile.createWriter(
+				function( fileWriter ) {
+					fileWriter.seek( fileWriter.length );
+
+					var toWrite = cf._cache.slice();
+					cf._cache = [];
+					var blob = new Blob( toWrite, {type: 'text/plain'} );
+					fileWriter.write( blob );
+					console.log('writing to disk');
+
+					cf._isWriting = false;
+					// TODO: this is no good ... just a first draft if you will
+					// this flushing to disk needs to be smarter, as in, flush to disk, then don't start 
+					// a new timeout until there is actually something to write in the _cache
+					// and also handle so it doesn't flush after each call to _write() ... but only after X 
+					// amounts of entries or after a certain amount of time.
+					// or maybe, just after some time after something was written and then just reset the timeout
+					// each time there is a new write or something like that. Have to test it out. writing 
+					setTimeout( function () { consoleFilePrivate.startFlushing( cf ); }, 50 );
+				},
+				fsErrorHandler
+			);
+		}
+	};
+
 	/**
 	 * @class
 	 * @constructor
@@ -107,78 +168,13 @@
 	 */
 	ConsoleFile.prototype.log = function ( tmpString ) {
 		// console.log( 'logging to file: ' + this._fileName + ' #### ' + tmpString );
-		this._write( 'log ', tmpString );
+		consoleFilePrivate.write( this, 'log ', tmpString );
 	};
 
 	// TODO: this should be private
 	ConsoleFile.prototype.setFs = function ( fs ) {
 		this._fs = fs;
-		this._initFile();
-	};
-
-	// TODO: think about taking the private methods off of prototype so users can't see/access them
-	/**
-	 * @private
-	 * Holds the logic for writing to file for .log(), .warn(), ...
-	 * @param {String} prefix the prefix to put before each log line
-	 * @param {String} the string to write to the log file
-	 */
-	ConsoleFile.prototype._write = function ( prefix, str ) {
-		var stringToWrite = prefix + str + "\n";
-
-		this._cache.push ( stringToWrite );
-	};
-
-	/**
-	 * @private
-	 * Called when the FS is ready. It will obtain the file 
-	 *  object for the log file, and kick off flushing to the 
-	 *  file. 
-	 */
-	ConsoleFile.prototype._initFile = function () {
-		this._fs.root.getFile(
-			'log/' + this._fileName + '.log',
-			{
-				create: true,
-				exclusive: false
-			},
-			function( fsFile ) {
-				this._fsFile = fsFile;
-				this._startFlushing();
-			}.bind( this ),
-			fsErrorHandler
-		);
-	};
-
-	/** @private */
-	ConsoleFile.prototype._startFlushing = function () {
-		if ( this._isWriting === true ) {
-			return;
-		}
-
-		this._isWriting = true;
-		this._fsFile.createWriter(
-			function( fileWriter ) {
-				fileWriter.seek( fileWriter.length );
-
-				var toWrite = this._cache.slice();
-				this._cache = [];
-				var blob = new Blob( toWrite, {type: 'text/plain'} );
-				fileWriter.write( blob );
-				console.log('writing to disk');
-
-				this._isWriting = false;
-				// TODO: this is no good ... just a first draft if you will
-				// this flushing to disk needs to be smarter, as in, flush to disk, then don't start 
-				// a new timeout until there is actually something to write in the _cache
-				// and also handle so it doesn't flush after each call to _write() ... but only after X 
-				// amounts of entries or after a certain amount of time.
-				// or maybe, just after some time after something was written and then just reset the timeout
-				// each time there is a new write or something like that. Have to test it out. writing 
-				setTimeout( this._startFlushing.bind( this ), 50 );
-			}.bind( this ),
-			fsErrorHandler
-		);
+		consoleFilePrivate.initFile( this );
 	};
 
 	// ConsoleFile.prototype.info = function () {};
