@@ -19,3 +19,6 @@ And whatever you log will get written to an actual log file on your disk.
 ## License
 
 Licensed under MIT. See `LICENSE.md` file for details.
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/janhancic/consolefile.js/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
