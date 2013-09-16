@@ -1,11 +1,11 @@
 (function ( console ) {
-	var consoleFileMethods = ['log', 'warn', 'error', 'info'],
+	var consoleFileMethods = [ 'log', 'warn', 'error', 'info', 'setSetting' ],
 		instances = {},
 		fs = null,
 		requestQuotaBytes = 10 * 1024 * 1024; // 10MB
 
 	if ( isBrowserSupported() === false ) {
-		patchConsole(consoleFileMethods);
+		patchConsole( consoleFileMethods );
 		console.warn( 'ConsoleFile.JS cannot run under this browser.' );
 
 		return;
@@ -41,7 +41,7 @@
 		fs = fileSystem;
 		// file system initialized, go trough all instances and set the fs object so they can start writing to files.
 		Object.keys( instances ).forEach( function ( fileName ) {
-			instances[fileName].setFs( fs );
+			instances[fileName]._setFs( fs );
 		} );
 	};
 
@@ -67,6 +67,8 @@
 	 *
 	 * @param {String} File name of the log file to use for the ConsoleFile object 
 	 *  that is returned from this function. Defaults to 'default'.
+	 * @return {ConsoleFile} A new (or existing) instance of the `ConsoleFile` 
+	 *  class for the given `fileName`.
 	 */
 	console.file = function ( fileName ) {
 		if ( !fileName ) {
@@ -98,20 +100,66 @@
 		this._cache = [];
 
 		if ( this._fs !== null ) {
-			this.setFs( fs );
+			this._setFs( fs );
 		}
+
+		this._writeOptions = {
+			logTime: true,
+			stringifyObjects: true
+		};
 	};
 
 	/**
 	 * Writes the arguments you pass into a log file.
 	 */
-	ConsoleFile.prototype.log = function ( tmpString ) {
-		// console.log( 'logging to file: ' + this._fileName + ' #### ' + tmpString );
-		this._write( this, 'log ', tmpString );
+	ConsoleFile.prototype.log = function () {
+		var args = Array.prototype.slice.call( arguments );
+		args.unshift( 'LOG' );
+
+		this._write.apply( this, args );
 	};
 
-	// TODO: this should be private
-	ConsoleFile.prototype.setFs = function ( fs ) {
+	ConsoleFile.prototype.info = function () {
+		var args = Array.prototype.slice.call( arguments );
+		args.unshift( 'INFO' );
+
+		this._write.apply( this, args );
+	};
+
+	ConsoleFile.prototype.warn = function () {
+		var args = Array.prototype.slice.call( arguments );
+		args.unshift( 'WARN' );
+
+		this._write.apply( this, args );
+	};
+
+	ConsoleFile.prototype.error = function () {
+		var args = Array.prototype.slice.call( arguments );
+		args.unshift( 'ERROR' );
+
+		this._write.apply( this, args );
+	};
+
+	/**
+	 * Sets new options for how the log is written.
+	 * Available options:
+	 * 	- `logTime`: (boolean) add time to the each log line
+	 * 	- `stringifyObjects`: (boolean) if `true` non-primitive 
+	 * 	 values will be passed trough `JSON.stringify()` before 
+	 * 	 being written to the log.
+	 * @param {String} key Option name
+	 * @param {String} value Option value
+	 */
+	ConsoleFile.prototype.setSetting = function ( key, value ) {
+		this._writeOptions[key] = value;
+	};
+
+	/**
+	 * @private
+	 * This method will be called from the outside, but is 
+	 *  not part of the public API.
+	 */
+	ConsoleFile.prototype._setFs = function ( fs ) {
 		this._fs = fs;
 		this._initFile();
 	};
@@ -122,8 +170,30 @@
 	 * @param {String} prefix the prefix to put before each log line
 	 * @param {String} the string to write to the log file
 	 */
-	ConsoleFile.prototype._write = function ( prefix, str ) {
-		var stringToWrite = prefix + str + "\n";
+	ConsoleFile.prototype._write = function ( prefix /*, arguments */ ) {
+		var stringToWrite = '[' + prefix + '] ';
+
+		if ( this._writeOptions.logTime === true ) {
+			stringToWrite += Date() + ' ';
+		}
+
+		var args = Array.prototype.slice.call( arguments, 1 );
+		args.forEach( function ( value, idx, arr ) {
+			if ( this._writeOptions.stringifyObjects === true ) {
+				if ( typeof value === 'object' ) {
+					stringToWrite += JSON.stringify( value );
+				} else {
+					stringToWrite += value;
+				}
+			} else {
+				stringToWrite += value;
+			}
+
+			if ( idx !== arr.length - 1 ) {
+				stringToWrite += ', ';
+			}
+
+		}.bind( this ) );
 
 		this._cache.push ( stringToWrite );
 	};
@@ -161,6 +231,7 @@
 				fileWriter.seek( fileWriter.length );
 
 				var toWrite = this._cache.slice();
+				JJJ= toWrite;
 				this._cache = [];
 				var blob = new Blob( toWrite, { type: 'text/plain' } );
 				fileWriter.write( blob );
@@ -174,16 +245,11 @@
 				// amounts of entries or after a certain amount of time.
 				// or maybe, just after some time after something was written and then just reset the timeout
 				// each time there is a new write or something like that. Have to test it out. 
-				setTimeout( this._startFlushing.bind( this ), 50 );
+				// setTimeout( this._startFlushing.bind( this ), 50 );
 			}.bind( this ),
 			fsErrorHandler
 		);
 	}
-
-	// ConsoleFile.prototype.info = function () {};
-	// ConsoleFile.prototype.warn = function () {};
-	// ConsoleFile.prototype.error = function () {};
-	// };
 
 	// provide shortcut methods, so you can use console.file.log() instead of console.file().log()
 	consoleFileMethods.forEach( function ( methodName ) {

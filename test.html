@@ -7,16 +7,17 @@
 <script>
 
 var i = 0;
-var a = setInterval( function() {
-	console.file.log ( 'aaa ' + i );
-	console.file( 'default' ).log ( 'bbb ' + i );
-	console.file( 'my' ).log ( 'iii ' + i );
+// var a = setInterval( function() {
+	console.file.setSetting( 'logTime', false);
+	console.file.log ( 'a', 2, [1, 2], {a: 1}, function() {var a = 1;} );
+	// console.file( 'default' ).log ( 'bbb ' + i );
+	// console.file( 'my' ).log ( 'iii ' + i );
 
 	i++;
 	if ( i > 100) {
 		clearInterval(a);
 	}
-}, 0);
+// }, 0);
 
 </script>
 	</body>
