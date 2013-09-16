@@ -6,8 +6,8 @@ module.exports = function( grunt ) {
 				banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
 			},
 			build: {
-				src: 'src/consolefile.js',
-				dest: 'build/consolefile.min.js'
+				src: 'src/ConsoleFile.js',
+				dest: 'build/ConsoleFile.min.js'
 			}
 		},
 		'http-server': {
