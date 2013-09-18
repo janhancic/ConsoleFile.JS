@@ -6,8 +6,8 @@ module.exports = function( grunt ) {
 				banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
 			},
 			build: {
-				src: 'src/ConsoleFile.js',
-				dest: 'build/ConsoleFile.min.js'
+				src: 'build/consolefile.js',
+				dest: 'build/consolefile.min.js'
 			}
 		},
 		'http-server': {
@@ -19,13 +19,19 @@ module.exports = function( grunt ) {
 				autoIndex: true,
 				defaultExt: "html",
 			}
+		},
+		watch: {
+			src: {
+				files: [ 'src/*' ],
+				tasks: [ 'stich-src-files' ],
+			}
 		}
 	} );
 
 	// Load the plugin that provides the "uglify" task.
 	grunt.loadNpmTasks('grunt-contrib-uglify' );
-
 	grunt.loadNpmTasks('grunt-http-server');
+	grunt.loadNpmTasks('grunt-contrib-watch');
 
 	// Default task(s).
 	grunt.registerTask( 'default', ['uglify'] );

@@ -1,4 +1,5 @@
 (function ( console ) {
+
 var consoleFileMethods = [ 'log', 'warn', 'error', 'info', 'setSetting' ],
 	instances = {},
 	fs = null,
