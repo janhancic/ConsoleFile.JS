@@ -16,9 +16,20 @@ console.file.log ( 'something different' ); // shortcut for the above
 
 And whatever you log will get written to an actual log file on your disk.
 
+## Developing
+_this is more for me at the moment, so I don't forget how to start everything_
+
+```
+# start the watch command
+grunt watch
+
+# start the static server
+grunt http-server
+```
+This will start a static server on `localhost:8080` and will rebuild `build/consolefile.js` each time a file inside `src/` changes.
+
 ## License
 
 Licensed under MIT. See `LICENSE.md` file for details.
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/janhancic/consolefile.js/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
