@@ -29,4 +29,20 @@ module.exports = function( grunt ) {
 
 	// Default task(s).
 	grunt.registerTask( 'default', ['uglify'] );
+
+	grunt.registerTask( 'stich-src-files', 'Stiches source file together', function () {
+		var templateFileContents = grunt.file.read( 'src/build_template.js' );
+
+		// matches: /*# FILE_NAME.js #*/
+		var matchesToReplace = templateFileContents.match( /\/\*# (.*?)\.js #\*\//g );
+
+		matchesToReplace.forEach( function ( match ) {
+			var fileName = match.replace( '/*# ', '' ).replace( ' #*/', '' );
+			var srcFileContents = grunt.file.read( 'src/' + fileName );
+
+			templateFileContents = templateFileContents.replace( match, srcFileContents );
+		} );
+
+		grunt.file.write( 'build/consolefile.js', templateFileContents );
+	} );
 };

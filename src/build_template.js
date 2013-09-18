@@ -1,10 +1,11 @@
 (function ( console ) {
-	/*# init.js #*/
 
-	/*# ConsoleFile.js #*/
+/*# init.js #*/
 
-	/*# shortcut_methods.js #*/
+/*# ConsoleFile.js #*/
 
-	/*# auxiliary.js #*/
+/*# shortcut_methods.js #*/
+
+/*# auxiliary.js #*/
 
 }( console ) );
