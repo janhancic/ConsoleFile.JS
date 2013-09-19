@@ -71,5 +71,5 @@ function fsErrorHandler ( error ) {
 		break;
 	};
 
-	console.log( 'ConsoleFile.JS FileSystem error: ' + msg, e) ;
+	console.log( 'ConsoleFile.JS FileSystem error: ' + msg, e);
 };

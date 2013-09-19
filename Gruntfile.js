@@ -17,13 +17,13 @@ module.exports = function( grunt ) {
 				host: "127.0.0.1",
 				showDir : true,
 				autoIndex: true,
-				defaultExt: "html",
+				defaultExt: "html"
 			}
 		},
 		watch: {
 			src: {
 				files: [ 'src/*' ],
-				tasks: [ 'stich-src-files' ],
+				tasks: [ 'stich-src-files' ]
 			}
 		}
 	} );
