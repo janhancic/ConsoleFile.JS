@@ -23,7 +23,13 @@ module.exports = function( grunt ) {
 		watch: {
 			src: {
 				files: [ 'src/*' ],
-				tasks: [ 'stich-src-files' ]
+				tasks: [ 'stitch-js' ]
+			}
+		},
+		'stitch-js': {
+			all: {
+				templateFile: 'src/build_template.js',
+				out: 'build/consolefile.js'
 			}
 		}
 	} );
@@ -32,23 +38,8 @@ module.exports = function( grunt ) {
 	grunt.loadNpmTasks('grunt-contrib-uglify' );
 	grunt.loadNpmTasks('grunt-http-server');
 	grunt.loadNpmTasks('grunt-contrib-watch');
+	grunt.loadNpmTasks('grunt-stitch-js');
 
 	// Default task(s).
 	grunt.registerTask( 'default', ['uglify'] );
-
-	grunt.registerTask( 'stich-src-files', 'Stiches source file together', function () {
-		var templateFileContents = grunt.file.read( 'src/build_template.js' );
-
-		// matches: /*# FILE_NAME.js #*/
-		var matchesToReplace = templateFileContents.match( /\/\*# (.*?)\.js #\*\//g );
-
-		matchesToReplace.forEach( function ( match ) {
-			var fileName = match.replace( '/*# ', '' ).replace( ' #*/', '' );
-			var srcFileContents = grunt.file.read( 'src/' + fileName );
-
-			templateFileContents = templateFileContents.replace( match, srcFileContents );
-		} );
-
-		grunt.file.write( 'build/consolefile.js', templateFileContents );
-	} );
 };

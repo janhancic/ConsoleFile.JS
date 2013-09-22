@@ -1,13 +1,13 @@
 (function ( console ) {
-/*# ConsoleFileBase.js #*/
+/*# src/ConsoleFileBase.js #*/
 
-/*# ConsoleFileBuffer.js #*/
+/*# src/ConsoleFileBuffer.js #*/
 
-/*# ConsoleFile.js #*/
+/*# src/ConsoleFile.js #*/
 
-/*# auxiliary.js #*/
+/*# src/auxiliary.js #*/
 
-/*# file_system.js #*/
+/*# src/file_system.js #*/
 
 // start glue code
 
