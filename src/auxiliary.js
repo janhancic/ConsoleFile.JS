@@ -20,22 +20,18 @@ function isBrowserSupported () {
  *  browser was supported. This allows the user to use the library 
  *  and not have to worry about it breaking in unsupported browsers.
  */
-function patchConsole ( consoleFileMethods ) {
-	var nopFunction = function () { console.log('nop')};
+function patchConsole () {
+	var nopConsoleFile = new ConsoleFileBase();
 
 	console.file = function () {
-		var returnObj = {};
-
-		consoleFileMethods.forEach( function ( methodName ) {
-			returnObj[methodName] = nopFunction;
-		} );
-
-		return returnObj;
+		return nopConsoleFile;
 	};
 
-	consoleFileMethods.forEach( function ( methodName ) {
-		console.file[methodName] = nopFunction;
-	} );
+	console.file.setSetting = nopConsoleFile.setSetting;
+	console.file.log = nopConsoleFile.log;
+	console.file.info = nopConsoleFile.info;
+	console.file.warn = nopConsoleFile.warn;
+	console.file.error = nopConsoleFile.error;
 };
 
 /**
