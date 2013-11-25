@@ -3,10 +3,16 @@ function FileSystemUtil () {
 
 	this._fs = null;
 	this._pendingFileWriterRequests = [];
-	this._fsRequestQuota( requestQuotaBytes );
+
+	setTimeout(
+		function () {
+			this._fsRequestQuota( requestQuotaBytes );
+		}.bind( this ),
+		500
+	);
 };
 
-FileSystemUtil.prototype.getFileWriter = function( fileName, callBack ) {
+FileSystemUtil.prototype.getFsFile = function( fileName, callBack ) {
 	if ( this._fs === null ) {
 		console.log( 'file system not ready, cant request writter yet');
 		this._pendingFileWriterRequests.push( {
@@ -14,11 +20,11 @@ FileSystemUtil.prototype.getFileWriter = function( fileName, callBack ) {
 			callBack: callBack
 		} );
 	} else {
-		this._createFileWriter( fileName, callBack );
+		this._getFsFile( fileName, callBack );
 	}
 };
 
-FileSystemUtil.prototype._createFileWriter = function( fileName, callBack ) {
+FileSystemUtil.prototype._getFsFile = function( fileName, callBack ) {
 	this._fs.root.getFile(
 		'log/' + fileName + '.log',
 		{
@@ -66,7 +72,7 @@ FileSystemUtil.prototype._fsLogFolderCreated = function ( fs ) {
 	this._fs = fs;
 
 	this._pendingFileWriterRequests.forEach( function ( pending ) {
-		this._createFileWriter( pending.fileName, pending.callBack );
+		this._getFsFile( pending.fileName, pending.callBack );
 	}.bind( this ) );
 
 	this._pendingFileWriterRequests = [];

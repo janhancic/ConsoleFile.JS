@@ -4,10 +4,16 @@ function FileSystemUtil () {
 
 	this._fs = null;
 	this._pendingFileWriterRequests = [];
-	this._fsRequestQuota( requestQuotaBytes );
+
+	setTimeout(
+		function () {
+			this._fsRequestQuota( requestQuotaBytes );
+		}.bind( this ),
+		500
+	);
 };
 
-FileSystemUtil.prototype.getFileWriter = function( fileName, callBack ) {
+FileSystemUtil.prototype.getFsFile = function( fileName, callBack ) {
 	if ( this._fs === null ) {
 		console.log( 'file system not ready, cant request writter yet');
 		this._pendingFileWriterRequests.push( {
@@ -15,11 +21,11 @@ FileSystemUtil.prototype.getFileWriter = function( fileName, callBack ) {
 			callBack: callBack
 		} );
 	} else {
-		this._createFileWriter( fileName, callBack );
+		this._getFsFile( fileName, callBack );
 	}
 };
 
-FileSystemUtil.prototype._createFileWriter = function( fileName, callBack ) {
+FileSystemUtil.prototype._getFsFile = function( fileName, callBack ) {
 	this._fs.root.getFile(
 		'log/' + fileName + '.log',
 		{
@@ -67,7 +73,7 @@ FileSystemUtil.prototype._fsLogFolderCreated = function ( fs ) {
 	this._fs = fs;
 
 	this._pendingFileWriterRequests.forEach( function ( pending ) {
-		this._createFileWriter( pending.fileName, pending.callBack );
+		this._getFsFile( pending.fileName, pending.callBack );
 	}.bind( this ) );
 
 	this._pendingFileWriterRequests = [];
@@ -108,25 +114,47 @@ FileSystemUtil.prototype._fsErrorHandler = function ( error ) {
 
 FileSystemUtil = new FileSystemUtil();
 function ConsoleFile ( fileName ) {
-	this._fileWriter = null;
+	this._fsFile = null;
 	this._logsToWrite = [];
 
-	FileSystemUtil.getFileWriter( fileName, this._storeFileWriter.bind( this ) );
+	FileSystemUtil.getFsFile( fileName, this._storeFsFile.bind( this ) );
 }
 
 ConsoleFile.prototype.log = function ( thingToLog ) {
-	if ( this._fileWriter === null ) {
-		console.log( 'logging to "cache"' );
-		console.log( thingToLog );
+	if ( this._fsFile === null ) {
+		console.log( 'logging to "cache"', thingToLog );
 		this._logsToWrite.push( thingToLog );
 	} else {
-		console.log( 'fileWriter is ready' );
+		console.log( 'fileWriter is ready', thingToLog );
+		this._write( thingToLog );
 	}
 };
 
-ConsoleFile.prototype._storeFileWriter = function ( fileWriter ) {
-	this._fileWriter = fileWriter;
+ConsoleFile.prototype._storeFsFile = function ( fsFile ) {
+	this._fsFile = fsFile;
 	console.log( 'got the fileWriter' );
+
+	this._logsToWrite.forEach( function( logToWrite ) {
+		this._write( logToWrite );
+	}.bind( this ) );
+
+	this._logsToWrite = [];
+};
+
+ConsoleFile.prototype._write = function ( thingToLog ) {
+	this._fsFile.createWriter(
+		function( fileWriter ) {
+			fileWriter.seek( fileWriter.length );
+
+			// TODO: for some reason only the last thing gets written to the file, dunno why
+			var blob = new Blob( [ thingToLog ], { type: 'text/plain' } );
+			fileWriter.write( blob );
+			console.log( 'writing to disk', thingToLog );
+		}.bind( this ),
+		function () {
+			throw new Error( 'Cant write log file' );
+		}
+	);
 };
 
 

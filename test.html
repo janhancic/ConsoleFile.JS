@@ -6,15 +6,16 @@
 	<body>
 <script>
 
-var cf = new ConsoleFile();
+var cf = new ConsoleFile( 'default' );
 
 var i = 0;
+var a = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 var writeInterval = setInterval(
 	function () {
-		cf.log('a', 'b');
+		cf.log(a[i]);
 
 		i++;
-		if ( i > 20 ) {
+		if ( i >= 20 ) {
 			clearInterval( writeInterval );
 		}
 	},
