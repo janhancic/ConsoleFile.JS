@@ -1,7 +1,8 @@
 function ConsoleFile ( fileName ) {
-	this._getFileWriter( fileName );
 	this._fileWriter = null;
 	this._logsToWrite = [];
+
+	FileSystemUtil.getFileWriter( fileName, this._storeFileWriter.bind( this ) );
 }
 
 ConsoleFile.prototype.log = function ( thingToLog ) {
@@ -14,6 +15,7 @@ ConsoleFile.prototype.log = function ( thingToLog ) {
 	}
 };
 
-ConsoleFile.prototype._getFileWriter = function ( fileName ) {
-
+ConsoleFile.prototype._storeFileWriter = function ( fileWriter ) {
+	this._fileWriter = fileWriter;
+	console.log( 'got the fileWriter' );
 };
