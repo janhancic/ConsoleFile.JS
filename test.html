@@ -6,18 +6,33 @@
 	<body>
 <script>
 
-var i = 0;
-// var a = setInterval( function() {
-	console.file.setSetting( 'logTime', false);
-	console.file.log ( 'a', 2, [1, 2], {a: 1}, function() {var a = 1;} );
-	// console.file( 'default' ).log ( 'bbb ' + i );
-	// console.file( 'my' ).log ( 'iii ' + i );
+var cf = new ConsoleFile();
 
-	i++;
-	if ( i > 100) {
-		clearInterval(a);
-	}
-// }, 0);
+var i = 0;
+var writeInterval = setInterval(
+	function () {
+		cf.log('a', 'b');
+
+		i++;
+		if ( i > 20 ) {
+			clearInterval( writeInterval );
+		}
+	},
+	100
+);
+
+// var i = 0;
+// // var a = setInterval( function() {
+// 	console.file.setSetting( 'logTime', false);
+// 	console.file.log ( 'a', 2, [1, 2], {a: 1}, function() {var a = 1;} );
+// 	// console.file( 'default' ).log ( 'bbb ' + i );
+// 	// console.file( 'my' ).log ( 'iii ' + i );
+
+// 	i++;
+// 	if ( i > 100) {
+// 		clearInterval(a);
+// 	}
+// // }, 0);
 
 </script>
 	</body>

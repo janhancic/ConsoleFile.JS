@@ -1,56 +1,19 @@
-/**
- * @class
- * @constructor
- * Constructs a new ConsoleFile. The construction is handled by the 
- * console.file(), as a user you never instantiate this class.
- * 
- * @param {Object} fileWriter FS FileWriter object
- */
-function ConsoleFile ( fileWriter ) {
-	ConsoleFileBase.call( this, file );
+function ConsoleFile ( fileName ) {
+	this._getFileWriter( fileName );
+	this._fileWriter = null;
+	this._logsToWrite = [];
 }
-ConsoleFile.prototype = new ConsoleFileBase();
-ConsoleFile.prototype.constructor = ConsoleFile;
 
-ConsoleFile.prototype.log = function () {
-	var args = Array.prototype.slice.call( arguments );
-	args.unshift( 'LOG' );
-
-	this._write.apply( this, args );
-};
-
-ConsoleFile.prototype._write = function ( prefix /*, arguments */ ) {
-	var stringToWrite = '[' + prefix + '] ';
-
-	if ( this._writeOptions.logTime === true ) {
-		stringToWrite += Date() + ' ';
+ConsoleFile.prototype.log = function ( thingToLog ) {
+	if ( this._fileWriter === null ) {
+		console.log( 'logging to "cache"' );
+		console.log( thingToLog );
+		this._logsToWrite.push( thingToLog );
+	} else {
+		console.log( 'fileWriter is ready' );
 	}
-
-	var args = Array.prototype.slice.call( arguments, 1 );
-	args.forEach( function ( value, idx, arr ) {
-		if ( this._writeOptions.stringifyObjects === true ) {
-			if ( typeof value === 'object' ) {
-				stringToWrite += JSON.stringify( value );
-			} else {
-				stringToWrite += value;
-			}
-		} else {
-			stringToWrite += value;
-		}
-
-		if ( idx !== arr.length - 1 ) {
-			stringToWrite += ', ';
-		}
-
-	}.bind( this ) );
-
-	this._writeToFile ( stringToWrite );
 };
 
-ConsoleFile.prototype._writeToFile = function ( stringToWrite ) {
-	this._fileWriter.seek( this._fileWriter.length );
+ConsoleFile.prototype._getFileWriter = function ( fileName ) {
 
-	var blob = new Blob( [ stringToWrite ], { type: 'text/plain' } );
-	this._fileWriter.write( blob );
-	console.log('writing to disk');
 };
